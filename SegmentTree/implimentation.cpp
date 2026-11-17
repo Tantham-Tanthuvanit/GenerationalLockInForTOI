@@ -3,36 +3,79 @@ using namespace std;
 
 typedef vector<int> vi;
 
-#define endl '\n'
+struct segtree {
 
-void build(vi a, vi& t, int i, int tl, int tr) {
-	if (tr - tl == 1) t[i] = a[tl];
-	else {
-		int tm = (tl + tr) / 2;
-		build(a, t, i*2, tl, tm);
-		build(a, t, i*2 + 1, tm, tr);
-		t[i] = t[i*2] + t[i*2+1];
+	int size;
+	vi sums;
+	
+	void init(int n) {
+		size = 1;
+
+		while (size < n) size *= 2;
+		sums.assign(2 * size, 0);
 	}
-}
 
-int sum(int i, vi &t, int tl, int tr, int l, int r) {
-	if (r <= tl || tr <= l) return 0; // no overlap
-	if (l <= tl && tr <= r) return t[i]; // nested segment
-
-	int tm = (tl + tr) / 2;
-	// partial overlap
-	return sum(i * 2, t, tl, tm, l, r) + sum(i * 2 + 1, t, tm, tr, l, r);
-}
-
-void update(int v, vi &t, int tl, int tr, int pos, int new_val) {
-	if (tr - tl == 1) t[v] = new_val;
-	else {
-		int tm = (tl + tr) / 2;
-		if (pos < tm) update(v*2, t, tl, tm, pos, new_val);
-		else update(v * 2 + 1, t, tm, tr, pos, new_val);
+	void set(int i, int v, int x, int lx, int rx) {
+		// check if in leaf node
+		if (rx - lx == 1) {
+			sums[x] = v;
+			return;
+		}	
+		int m = (lx + rx) / 2;
+		// if its left of the middle then go left
+		if (i < m) {
+			set(i,v,2*x+1,lx,m);
+		} else {
+			set(i,v,2*x+2,m,rx);
+		}
+		sums[x] = sums[2 * x + 1] + sums[2 * x + 2];
 	}
-}
+
+	void set(int i, int v) {
+		set(i,v,0,0,size);	
+	}
+
+	int sum(int l, int r, int x, int lx, int rx) {
+		// outside boundries
+		if (lx >= r || l >= rx) return 0;
+		if (lx >= l && rx <= r) return sums[x];
+		int m = (lx + rx) / 2;
+		int lt = sum(l,r,2*x + 1, lx, m);
+		int rt = sum(l,r,2*x + 2, m, rx);
+		return lt + rt;
+	}
+
+	int sum(int l,int r) {
+		return sum(l,r,0,0,size);
+	}
+
+};
 
 int main() {
+	int n, m; cin >> n >> m;
+
+	segtree st;
+	st.init(n);
+
+	for (int i = 0; i < n; ++i) {
+		int v;
+		cin >> v;
+		st.set(i, v);
+	}
+
+	while (m--) {
+		int op;
+		cin >> op;
+		if (op == 1) {
+			int i, v;
+			cin >> i >> v;
+			st.set(i,v);
+		} else {
+			int l,r;
+			cin >> l >> r;
+			cout << st.sum(l,r) << '\n';
+		}
+	}
+
 	return 0;
 }
